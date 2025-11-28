@@ -26,6 +26,7 @@ pub struct AlignmentData {
     pub subject: Vec<char>,
     pub score_matrix: Vec<Arr2D<i32>>,
     pub pointer_matrix: Vec<Arr2D<i32>>,
+    pub is_built: bool,
 }
 
 impl AlignmentData {
@@ -39,6 +40,7 @@ impl AlignmentData {
             subject,
             score_matrix,
             pointer_matrix,
+            is_built: false,
         }
     }
 
@@ -60,6 +62,7 @@ impl AlignmentData {
             subject,
             score_matrix,
             pointer_matrix,
+            is_built: false,
         }
     }
 

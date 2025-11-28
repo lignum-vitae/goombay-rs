@@ -16,12 +16,12 @@ fn setup_nw() -> NeedlemanWunsch {
 fn test_identical_sequences() {
     let nw = setup_nw();
     let mut nw_alignment = AlignmentData::new("ACTG", "ACTG");
-    nw.build(&mut nw_alignment);
-    let aligned = nw.align(&nw_alignment, false);
-    let sim = nw.similarity(&nw_alignment);
-    let dist = nw.distance(&nw_alignment);
-    let norm_sim = nw.normalized_similarity(&nw_alignment);
-    let norm_dist = nw.normalized_distance(&nw_alignment);
+
+    let aligned = nw.align(&mut nw_alignment, false);
+    let sim = nw.similarity(&mut nw_alignment);
+    let dist = nw.distance(&mut nw_alignment);
+    let norm_sim = nw.normalized_similarity(&mut nw_alignment);
+    let norm_dist = nw.normalized_distance(&mut nw_alignment);
 
     assert_eq!(aligned[0], "ACTG\nACTG");
     assert_eq!(sim, (4 * nw.scores.identity) as i32); // alignment length = 4, identity score = 2
@@ -35,11 +35,11 @@ fn test_completely_different() {
     let nw = setup_nw();
     let mut nw_alignment = AlignmentData::new("AAAA", "TTTT");
     nw.build(&mut nw_alignment);
-    let aligned = nw.align(&nw_alignment, false);
-    let sim = nw.similarity(&nw_alignment);
-    let dist = nw.distance(&nw_alignment);
-    let norm_sim = nw.normalized_similarity(&nw_alignment);
-    let norm_dist = nw.normalized_distance(&nw_alignment);
+    let aligned = nw.align(&mut nw_alignment, false);
+    let sim = nw.similarity(&mut nw_alignment);
+    let dist = nw.distance(&mut nw_alignment);
+    let norm_sim = nw.normalized_similarity(&mut nw_alignment);
+    let norm_dist = nw.normalized_distance(&mut nw_alignment);
 
     assert_eq!(aligned[0], "AAAA\nTTTT");
     assert_eq!(sim, -4_i32 * nw.scores.mismatch as i32); // mismatch score = 1
@@ -58,8 +58,8 @@ fn test_different_length() {
     ];
     for (query, subject, expected) in test_cases {
         let mut nw_alignment = AlignmentData::new(query, subject);
-        nw.build(&mut nw_alignment);
-        let aligned = nw.align(&nw_alignment, false);
+
+        let aligned = nw.align(&mut nw_alignment, false);
         assert_eq!(aligned[0], expected);
     }
 }
@@ -84,8 +84,8 @@ fn test_normalisation() {
     for ((query, subject), (expected_sim, expected_dist)) in sequences.iter().zip(expected) {
         let mut nw_alignment = AlignmentData::new(query, subject);
         nw.build(&mut nw_alignment);
-        let norm_sim = nw.normalized_similarity(&nw_alignment);
-        let norm_dist = nw.normalized_distance(&nw_alignment);
+        let norm_sim = nw.normalized_similarity(&mut nw_alignment);
+        let norm_dist = nw.normalized_distance(&mut nw_alignment);
 
         assert_eq!(norm_sim, expected_sim);
         assert_eq!(norm_dist, expected_dist);
@@ -105,10 +105,10 @@ fn test_empty_sequences() {
 
     for (query, subject, expected_align, expected_sim, expected_dist) in test_cases {
         let mut nw_alignment = AlignmentData::new(query, subject);
-        nw.build(&mut nw_alignment);
-        let aligned = nw.align(&nw_alignment, false);
-        let sim = nw.similarity(&nw_alignment);
-        let dist = nw.distance(&nw_alignment);
+
+        let aligned = nw.align(&mut nw_alignment, false);
+        let sim = nw.similarity(&mut nw_alignment);
+        let dist = nw.distance(&mut nw_alignment);
 
         assert_eq!(aligned[0], expected_align);
         assert_eq!(sim, expected_sim);
@@ -123,15 +123,15 @@ fn test_single_character() {
 
     let mut nw_match = AlignmentData::new("A", "A");
     nw.build(&mut nw_match);
-    assert_eq!(nw.align(&nw_match, false)[0], "A\nA");
-    assert_eq!(nw.similarity(&nw_match), scores.identity as i32);
-    assert_eq!(nw.distance(&nw_match), 0);
+    assert_eq!(nw.align(&mut nw_match, false)[0], "A\nA");
+    assert_eq!(nw.similarity(&mut nw_match), scores.identity as i32);
+    assert_eq!(nw.distance(&mut nw_match), 0);
 
     let mut nw_mismatch = AlignmentData::new("A", "T");
     nw.build(&mut nw_mismatch);
-    assert_eq!(nw.align(&nw_mismatch, false)[0], "A\nT");
-    assert_eq!(nw.similarity(&nw_mismatch), -(scores.mismatch as i32));
-    assert_eq!(nw.distance(&nw_mismatch), scores.mismatch as i32);
+    assert_eq!(nw.align(&mut nw_mismatch, false)[0], "A\nT");
+    assert_eq!(nw.similarity(&mut nw_mismatch), -(scores.mismatch as i32));
+    assert_eq!(nw.distance(&mut nw_mismatch), scores.mismatch as i32);
 }
 
 #[test]
@@ -141,20 +141,20 @@ fn test_case_sensitivity() {
 
     for (query, subject) in test_cases {
         let mut nw_alignment_mixed = AlignmentData::new(query, subject);
-        nw.build(&mut nw_alignment_mixed);
-        let aligned_mixed = nw.align(&nw_alignment_mixed, false);
+
+        let aligned_mixed = nw.align(&mut nw_alignment_mixed, false);
 
         let mut nw_alignment_upper = AlignmentData::new(
             query.to_uppercase().as_str(),
             subject.to_uppercase().as_str(),
         );
         nw.build(&mut nw_alignment_upper);
-        let aligned_upper = nw.align(&nw_alignment_upper, false);
+        let aligned_upper = nw.align(&mut nw_alignment_upper, false);
 
         assert_eq!(aligned_mixed[0], aligned_upper[0]);
 
-        let sim_mixed = nw.similarity(&nw_alignment_mixed);
-        let sim_upper = nw.similarity(&nw_alignment_upper);
+        let sim_mixed = nw.similarity(&mut nw_alignment_mixed);
+        let sim_upper = nw.similarity(&mut nw_alignment_upper);
         assert!((sim_mixed - sim_upper).abs() == 0);
     }
 }
@@ -172,7 +172,7 @@ fn test_scoring_parameters() {
 
     let mut nw_alignment = AlignmentData::new("ACGT", "AGT");
     custom_nw.build(&mut nw_alignment);
-    assert_eq!(custom_nw.align(&nw_alignment, false)[0], "ACGT\nA-GT");
+    assert_eq!(custom_nw.align(&mut nw_alignment, false)[0], "ACGT\nA-GT");
 
     let query = "AC";
     let subject = "AT";
@@ -198,8 +198,7 @@ fn test_all_alignments() {
 
     let (query, subject) = ("ACCG", "ACG");
     let mut nw_alignment = AlignmentData::new(query, subject);
-    nw.build(&mut nw_alignment);
-    let all_aligned = nw.align(&nw_alignment, true);
+    let all_aligned = nw.align(&mut nw_alignment, true);
 
     assert_eq!(all_aligned.len(), 2);
     assert!(all_aligned.contains(&"ACCG\nAC-G".to_string()));
@@ -208,7 +207,7 @@ fn test_all_alignments() {
     let (query, subject) = ("ATGTGTA", "ATA");
     let mut nw_alignment = AlignmentData::new(query, subject);
     nw.build(&mut nw_alignment);
-    let all_aligned = nw.align(&nw_alignment, true);
+    let all_aligned = nw.align(&mut nw_alignment, true);
 
     assert_eq!(all_aligned.len(), 3);
     assert!(all_aligned.contains(&"ATGTGTA\nAT----A".to_string()));

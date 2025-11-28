@@ -54,9 +54,13 @@ impl NeedlemanWunsch {
                 }
             }
         }
+        alignments.is_built = true;
     }
 
-    pub fn align(&self, alignments: &AlignmentData, all_alignments: bool) -> Vec<String> {
+    pub fn align(&self, alignments: &mut AlignmentData, all_alignments: bool) -> Vec<String> {
+        if !alignments.is_built {
+            self.build(alignments);
+        }
         let i = alignments.query.len();
         let j = alignments.subject.len();
 
@@ -74,9 +78,12 @@ impl NeedlemanWunsch {
         aligned_results
     }
 
-    pub fn similarity(&self, alignments: &AlignmentData) -> i32 {
+    pub fn similarity(&self, alignments: &mut AlignmentData) -> i32 {
         if alignments.query.is_empty() && alignments.subject.is_empty() {
             return 1;
+        }
+        if !alignments.is_built {
+            self.build(alignments);
         }
         let score_matrix = alignments.score_matrix();
         let i = alignments.query.len();
@@ -84,7 +91,7 @@ impl NeedlemanWunsch {
         score_matrix[i][j]
     }
 
-    pub fn distance(&self, alignments: &AlignmentData) -> i32 {
+    pub fn distance(&self, alignments: &mut AlignmentData) -> i32 {
         if alignments.query.is_empty() && alignments.subject.is_empty() {
             return 0;
         }
@@ -96,6 +103,9 @@ impl NeedlemanWunsch {
                 .unwrap_or(0_usize);
             return (max_len * self.scores.mismatch) as i32;
         }
+        if !alignments.is_built {
+            self.build(alignments);
+        }
         let similarity = self.similarity(alignments);
         let max_possible = [alignments.query.len(), alignments.subject.len()]
             .iter()
@@ -106,7 +116,7 @@ impl NeedlemanWunsch {
         max_possible as i32 - similarity.abs()
     }
 
-    pub fn normalized_similarity(&self, alignments: &AlignmentData) -> f64 {
+    pub fn normalized_similarity(&self, alignments: &mut AlignmentData) -> f64 {
         let raw_sim = (self.similarity(alignments)) as f64;
         let max_length = [alignments.query.len(), alignments.subject.len()]
             .iter()
@@ -121,7 +131,7 @@ impl NeedlemanWunsch {
         (raw_sim + min_possible.abs()) / score_range
     }
 
-    pub fn normalized_distance(&self, alignments: &AlignmentData) -> f64 {
+    pub fn normalized_distance(&self, alignments: &mut AlignmentData) -> f64 {
         1_f64 - self.normalized_similarity(alignments)
     }
 }

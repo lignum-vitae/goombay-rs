@@ -18,11 +18,13 @@ fn main() {
     // recalculated when scoring alignments
     let mut nw_alignment = AlignmentData::new(query, subject);
 
-    // Build the scoring matrix and pointer matrix
-    nw.build(&mut nw_alignment);
+    // // Build the scoring matrix and pointer matrix
+    // // Matrices can be manually built like below
+    // nw.build(&mut nw_alignment);
+    // // But, all of the alignment and scoring methods can build the matrices
 
     // Align the sequences based on the pointer matrix
-    let aligned = nw.align(&nw_alignment, true);
+    let aligned = nw.align(&mut nw_alignment, true);
     println!("{}", nw_alignment.score_matrix());
     println!("{}", nw_alignment.pointer_matrix());
     for (i, alignment) in aligned.iter().enumerate() {
@@ -30,11 +32,11 @@ fn main() {
         println!("{alignment}");
     }
 
-    // Calculate alignment scores for aligned sequences
-    let sim = nw.similarity(&nw_alignment);
-    let dist = nw.distance(&nw_alignment);
-    let norm_sim = nw.normalized_similarity(&nw_alignment);
-    let norm_dist = nw.normalized_distance(&nw_alignment);
+    // And/or calculate alignment scores for aligned sequences
+    let sim = nw.similarity(&mut nw_alignment);
+    let dist = nw.distance(&mut nw_alignment);
+    let norm_sim = nw.normalized_similarity(&mut nw_alignment);
+    let norm_dist = nw.normalized_distance(&mut nw_alignment);
     println!(
         "Similarity: {sim}\nDistance: {dist}\nNormalized Similarity: {norm_sim}\nNormalized Distance: {norm_dist}"
     );
