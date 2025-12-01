@@ -1,7 +1,93 @@
-use crate::align::PointerValues;
+use crate::align::{AlignmentData, PointerValues};
 use spindalis::utils::Arr2D;
 
-pub struct GlobalAlignment<'a> {
+pub struct GloablAlignmentModel {
+    pub data: AlignmentData,
+    pub identity: usize,
+    pub mismatch: usize,
+    pub all_alignments: bool,
+}
+
+impl GloablAlignmentModel {
+    pub fn all_alignments(&self, value: bool) -> Self {
+        Self {
+            data: self.data.clone(),
+            identity: self.identity,
+            mismatch: self.mismatch,
+            all_alignments: value,
+        }
+    }
+    pub fn align(&self) -> Vec<String> {
+        let i = self.data.query.len();
+        let j = self.data.subject.len();
+
+        let iterator = GlobalAligner {
+            query_chars: &self.data.query,
+            subject_chars: &self.data.subject,
+            pointer_matrix: self.data.pointer_matrix(),
+            stack: vec![(Vec::new(), Vec::new(), i, j)],
+            all_alignments: self.all_alignments,
+            match_val: PointerValues::Match as i32,
+            up_val: PointerValues::Up as i32,
+            left_val: PointerValues::Left as i32,
+        };
+        let aligned_results: Vec<String> = iterator.map(|(qs, ss)| format!("{qs}\n{ss}")).collect();
+        aligned_results
+    }
+
+    pub fn similarity(&self) -> i32 {
+        if self.data.query.is_empty() && self.data.subject.is_empty() {
+            return 1;
+        }
+        let score_matrix = self.data.score_matrix();
+        let i = self.data.query.len();
+        let j = self.data.subject.len();
+        score_matrix[i][j]
+    }
+
+    pub fn distance(&self) -> i32 {
+        if self.data.query.is_empty() && self.data.subject.is_empty() {
+            return 0;
+        }
+        if self.data.query.is_empty() || self.data.subject.is_empty() {
+            let max_len = [self.data.query.len(), self.data.subject.len()]
+                .iter()
+                .max()
+                .copied()
+                .unwrap_or(0_usize);
+            return (max_len * self.mismatch) as i32;
+        }
+        let similarity = self.similarity();
+        let max_possible = [self.data.query.len(), self.data.subject.len()]
+            .iter()
+            .max()
+            .copied()
+            .unwrap()
+            * self.identity;
+        max_possible as i32 - similarity.abs()
+    }
+
+    pub fn normalized_similarity(&self) -> f64 {
+        let raw_sim = (self.similarity()) as f64;
+        let max_length = [self.data.query.len(), self.data.subject.len()]
+            .iter()
+            .max()
+            .copied()
+            .unwrap();
+        let max_possible = (max_length * self.identity) as f64;
+        let min_possible = (max_length * self.mismatch) as f64;
+
+        let score_range = max_possible + min_possible.abs();
+
+        (raw_sim + min_possible.abs()) / score_range
+    }
+
+    pub fn normalized_distance(&self) -> f64 {
+        1_f64 - self.normalized_similarity()
+    }
+}
+
+pub struct GlobalAligner<'a> {
     pub query_chars: &'a [char],
     pub subject_chars: &'a [char],
     pub pointer_matrix: &'a Arr2D<i32>,
@@ -12,7 +98,7 @@ pub struct GlobalAlignment<'a> {
     pub left_val: i32,
 }
 
-impl<'a> Iterator for GlobalAlignment<'a> {
+impl<'a> Iterator for GlobalAligner<'a> {
     type Item = (String, String);
 
     fn next(&mut self) -> Option<Self::Item> {

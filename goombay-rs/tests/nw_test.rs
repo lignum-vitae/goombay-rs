@@ -1,30 +1,18 @@
-use goombay_rs::align::{AlignmentData, NeedlemanWunsch, Scoring};
+use goombay_rs::align::{NeedlemanWunsch, Scoring};
 use spindalis::utils::Arr2D;
-
-fn setup_nw() -> NeedlemanWunsch {
-    let scores = Scoring {
-        identity: 2,
-        mismatch: 1,
-        gap: 1,
-        transpose: None,
-        extended_gap: None,
-    };
-    NeedlemanWunsch::new(&scores)
-}
 
 #[test]
 fn test_identical_sequences() {
-    let nw = setup_nw();
-    let mut nw_alignment = AlignmentData::new("ACTG", "ACTG");
+    let nw = NeedlemanWunsch::compute("ACTG", "ACTG");
 
-    let aligned = nw.align(&mut nw_alignment, false);
-    let sim = nw.similarity(&mut nw_alignment);
-    let dist = nw.distance(&mut nw_alignment);
-    let norm_sim = nw.normalized_similarity(&mut nw_alignment);
-    let norm_dist = nw.normalized_distance(&mut nw_alignment);
+    let aligned = nw.align();
+    let sim = nw.similarity();
+    let dist = nw.distance();
+    let norm_sim = nw.normalized_similarity();
+    let norm_dist = nw.normalized_distance();
 
     assert_eq!(aligned[0], "ACTG\nACTG");
-    assert_eq!(sim, (4 * nw.scores.identity) as i32); // alignment length = 4, identity score = 2
+    assert_eq!(sim, (4 * nw.identity) as i32); // alignment length = 4, identity score = 2
     assert_eq!(dist, 0);
     assert_eq!(norm_sim, 1.0);
     assert_eq!(norm_dist, 0.0);
@@ -32,41 +20,37 @@ fn test_identical_sequences() {
 
 #[test]
 fn test_completely_different() {
-    let nw = setup_nw();
-    let mut nw_alignment = AlignmentData::new("AAAA", "TTTT");
-    nw.build(&mut nw_alignment);
-    let aligned = nw.align(&mut nw_alignment, false);
-    let sim = nw.similarity(&mut nw_alignment);
-    let dist = nw.distance(&mut nw_alignment);
-    let norm_sim = nw.normalized_similarity(&mut nw_alignment);
-    let norm_dist = nw.normalized_distance(&mut nw_alignment);
+    let nw = NeedlemanWunsch::compute("AAAA", "TTTT");
+    let aligned = nw.align();
+    let sim = nw.similarity();
+    let dist = nw.distance();
+    let norm_sim = nw.normalized_similarity();
+    let norm_dist = nw.normalized_distance();
 
     assert_eq!(aligned[0], "AAAA\nTTTT");
-    assert_eq!(sim, -4_i32 * nw.scores.mismatch as i32); // mismatch score = 1
-    assert_eq!(dist, (4 * nw.scores.mismatch) as i32);
+    assert_eq!(sim, -4_i32 * nw.mismatch as i32); // mismatch score = 1
+    assert_eq!(dist, (4 * nw.mismatch) as i32);
     assert_eq!(norm_sim, 0.0);
     assert_eq!(norm_dist, 1.0);
 }
 
 #[test]
 fn test_different_length() {
-    let nw = setup_nw();
     let test_cases = vec![
         ("ACTG", "ACT", "ACTG\nACT-"), // Longer query
         ("ACT", "ACTG", "ACT-\nACTG"), // Longer subject
         ("ACGT", "AGT", "ACGT\nA-GT"), // Internal gap
     ];
     for (query, subject, expected) in test_cases {
-        let mut nw_alignment = AlignmentData::new(query, subject);
+        let nw = NeedlemanWunsch::compute(query, subject);
 
-        let aligned = nw.align(&mut nw_alignment, false);
+        let aligned = nw.align();
         assert_eq!(aligned[0], expected);
     }
 }
 
 #[test]
 fn test_normalisation() {
-    let nw = setup_nw();
     let sequences = [
         ("ACTG", "BBBB"),
         ("ACTG", "ABBB"),
@@ -82,10 +66,9 @@ fn test_normalisation() {
         (1.0, 0.0),
     ];
     for ((query, subject), (expected_sim, expected_dist)) in sequences.iter().zip(expected) {
-        let mut nw_alignment = AlignmentData::new(query, subject);
-        nw.build(&mut nw_alignment);
-        let norm_sim = nw.normalized_similarity(&mut nw_alignment);
-        let norm_dist = nw.normalized_distance(&mut nw_alignment);
+        let nw = NeedlemanWunsch::compute(query, subject);
+        let norm_sim = nw.normalized_similarity();
+        let norm_dist = nw.normalized_distance();
 
         assert_eq!(norm_sim, expected_sim);
         assert_eq!(norm_dist, expected_dist);
@@ -94,8 +77,16 @@ fn test_normalisation() {
 
 #[test]
 fn test_empty_sequences() {
-    let nw = setup_nw();
-    let gap_score = nw.scores.gap as i32;
+    let custom_scores = Scoring {
+        identity: 2,
+        mismatch: 1,
+        gap: 1,
+        transpose: None,
+        extended_gap: None,
+    };
+    let custom_nw = NeedlemanWunsch::set_scores(&custom_scores);
+
+    let gap_score = custom_scores.gap as i32;
 
     let test_cases = vec![
         ("", "ACTG", "----\nACTG", -4 * gap_score, 4 * gap_score),
@@ -104,11 +95,11 @@ fn test_empty_sequences() {
     ];
 
     for (query, subject, expected_align, expected_sim, expected_dist) in test_cases {
-        let mut nw_alignment = AlignmentData::new(query, subject);
+        let nw = custom_nw.calculate_matrix(query, subject);
 
-        let aligned = nw.align(&mut nw_alignment, false);
-        let sim = nw.similarity(&mut nw_alignment);
-        let dist = nw.distance(&mut nw_alignment);
+        let aligned = nw.align();
+        let sim = nw.similarity();
+        let dist = nw.distance();
 
         assert_eq!(aligned[0], expected_align);
         assert_eq!(sim, expected_sim);
@@ -118,43 +109,36 @@ fn test_empty_sequences() {
 
 #[test]
 fn test_single_character() {
-    let nw = setup_nw();
-    let scores = &nw.scores;
+    let nw_match = NeedlemanWunsch::compute("A", "A");
+    assert_eq!(nw_match.align()[0], "A\nA");
+    assert_eq!(nw_match.similarity(), nw_match.identity as i32);
+    assert_eq!(nw_match.distance(), 0);
 
-    let mut nw_match = AlignmentData::new("A", "A");
-    nw.build(&mut nw_match);
-    assert_eq!(nw.align(&mut nw_match, false)[0], "A\nA");
-    assert_eq!(nw.similarity(&mut nw_match), scores.identity as i32);
-    assert_eq!(nw.distance(&mut nw_match), 0);
-
-    let mut nw_mismatch = AlignmentData::new("A", "T");
-    nw.build(&mut nw_mismatch);
-    assert_eq!(nw.align(&mut nw_mismatch, false)[0], "A\nT");
-    assert_eq!(nw.similarity(&mut nw_mismatch), -(scores.mismatch as i32));
-    assert_eq!(nw.distance(&mut nw_mismatch), scores.mismatch as i32);
+    let nw_mismatch = NeedlemanWunsch::compute("A", "T");
+    assert_eq!(nw_mismatch.align()[0], "A\nT");
+    assert_eq!(nw_mismatch.similarity(), -(nw_mismatch.mismatch as i32));
+    assert_eq!(nw_mismatch.distance(), nw_mismatch.mismatch as i32);
 }
 
 #[test]
 fn test_case_sensitivity() {
-    let nw = setup_nw();
     let test_cases = vec![("ACTG", "actg"), ("AcTg", "aCtG"), ("actg", "ACTG")];
 
     for (query, subject) in test_cases {
-        let mut nw_alignment_mixed = AlignmentData::new(query, subject);
+        let nw_mixed = NeedlemanWunsch::compute(query, subject);
 
-        let aligned_mixed = nw.align(&mut nw_alignment_mixed, false);
+        let aligned_mixed = nw_mixed.align();
 
-        let mut nw_alignment_upper = AlignmentData::new(
+        let nw_upper = NeedlemanWunsch::compute(
             query.to_uppercase().as_str(),
             subject.to_uppercase().as_str(),
         );
-        nw.build(&mut nw_alignment_upper);
-        let aligned_upper = nw.align(&mut nw_alignment_upper, false);
+        let aligned_upper = nw_upper.align();
 
         assert_eq!(aligned_mixed[0], aligned_upper[0]);
 
-        let sim_mixed = nw.similarity(&mut nw_alignment_mixed);
-        let sim_upper = nw.similarity(&mut nw_alignment_upper);
+        let sim_mixed = nw_mixed.similarity();
+        let sim_upper = nw_upper.similarity();
         assert!((sim_mixed - sim_upper).abs() == 0);
     }
 }
@@ -168,20 +152,18 @@ fn test_scoring_parameters() {
         transpose: None,
         extended_gap: None,
     };
-    let custom_nw = NeedlemanWunsch::new(&custom_scores);
+    let custom_nw = NeedlemanWunsch::set_scores(&custom_scores);
 
-    let mut nw_alignment = AlignmentData::new("ACGT", "AGT");
-    custom_nw.build(&mut nw_alignment);
-    assert_eq!(custom_nw.align(&mut nw_alignment, false)[0], "ACGT\nA-GT");
+    let nw_alignment = custom_nw.calculate_matrix("ACGT", "AGT");
+    assert_eq!(nw_alignment.align()[0], "ACGT\nA-GT");
 
     let query = "AC";
     let subject = "AT";
-    let mut nw_alignment_matrix = AlignmentData::new(query, subject);
-    custom_nw.build(&mut nw_alignment_matrix);
+    let nw_alignment_matrix = custom_nw.calculate_matrix(query, subject);
 
     let expected_score: Arr2D<i32> = Arr2D::from(&[[0, -3, -6], [-3, 1, -2], [-6, -2, -1]]);
 
-    let score_matrix = &nw_alignment_matrix.score_matrix[0];
+    let score_matrix = &nw_alignment_matrix.data.score_matrix[0];
     for r in 0..=query.len() {
         for c in 0..=subject.len() {
             assert_eq!(
@@ -194,19 +176,17 @@ fn test_scoring_parameters() {
 
 #[test]
 fn test_all_alignments() {
-    let nw = setup_nw();
-
     let (query, subject) = ("ACCG", "ACG");
-    let mut nw_alignment = AlignmentData::new(query, subject);
-    let all_aligned = nw.align(&mut nw_alignment, true);
+    let nw = NeedlemanWunsch::compute(query, subject);
+    let all_aligned = nw.all_alignments(true).align();
 
     assert_eq!(all_aligned.len(), 2);
     assert!(all_aligned.contains(&"ACCG\nAC-G".to_string()));
     assert!(all_aligned.contains(&"ACCG\nA-CG".to_string()));
 
     let (query, subject) = ("ATGTGTA", "ATA");
-    let mut nw_alignment = AlignmentData::new(query, subject);
-    let all_aligned = nw.align(&mut nw_alignment, true);
+    let nw = NeedlemanWunsch::compute(query, subject);
+    let all_aligned = nw.all_alignments(true).align();
 
     assert_eq!(all_aligned.len(), 3);
     assert!(all_aligned.contains(&"ATGTGTA\nAT----A".to_string()));

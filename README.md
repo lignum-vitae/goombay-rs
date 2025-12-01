@@ -34,6 +34,13 @@ Run any example with the following command:
 
 Do not include `.rs` when running examples.
 
+## Contributing
+
+We welcome contributions! Please read our:
+
+- [Code of Conduct](https://github.com/lignum-vitae/goombay-rs/blob/main/docs/CODE_OF_CONDUCT.md)
+- [Contribution Guidelines](https://github.com/lignum-vitae/goombay-rs/blob/main/docs/CONTRIBUTING.md)
+
 ## Stability
 
 This project is in the alpha stage. APIs may change without warning until version

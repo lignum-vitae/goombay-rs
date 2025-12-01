@@ -1,9 +1,9 @@
 use spindalis::utils::Arr2D;
 
 pub mod base;
-pub mod edit;
+pub mod needleman_wunsch;
 
-pub use edit::NeedlemanWunsch;
+pub use needleman_wunsch::NeedlemanWunsch;
 
 pub enum PointerValues {
     Match = 2,
@@ -21,12 +21,12 @@ pub struct Scoring {
     pub extended_gap: Option<usize>,
 }
 
+#[derive(Clone)]
 pub struct AlignmentData {
     pub query: Vec<char>,
     pub subject: Vec<char>,
     pub score_matrix: Vec<Arr2D<i32>>,
     pub pointer_matrix: Vec<Arr2D<i32>>,
-    pub is_built: bool,
 }
 
 impl AlignmentData {
@@ -40,7 +40,6 @@ impl AlignmentData {
             subject,
             score_matrix,
             pointer_matrix,
-            is_built: false,
         }
     }
 
@@ -62,7 +61,6 @@ impl AlignmentData {
             subject,
             score_matrix,
             pointer_matrix,
-            is_built: false,
         }
     }
 
