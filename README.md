@@ -19,9 +19,10 @@ Then run:
 
 ## Project layout
 
-| Module | Description                                                                     |
-| ------ | ------------------------------------------------------------------------------- |
-| edit   | Algorithms that use edit distance as an alignment tool such as Needleman-Wunsch |
+| Module  | Description                                                                       |
+| ------- | --------------------------------------------------------------------------------- |
+| align   | Alignment algorithms such as Needleman-Wunsch, Wagner-Fischer, and Smith-Waterman |
+| scoring | Scoring structs for custom scoring in alignment algorithms                        |
 
 ### Running Examples
 
