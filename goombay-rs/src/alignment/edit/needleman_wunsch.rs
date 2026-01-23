@@ -1,6 +1,7 @@
 use crate::align::global_base::{GlobalAlgorithm, GlobalAlignmentModel, Metric};
 use crate::align::scoring::GeneralScoring;
 use crate::align::{AlignmentData, GlobalAlignmentMatrix, PointerValues, Scoring};
+use std::cmp::max;
 
 pub struct NeedlemanWunsch<S: Scoring + Clone> {
     pub scores: S,
@@ -62,7 +63,7 @@ impl GlobalAlignmentMatrix<GeneralScoring> for NeedlemanWunsch<GeneralScoring> {
                 let ugap = score_matrix[i - 1][j] - self.scores.gap as i32;
                 let lgap = score_matrix[i][j - 1] - self.scores.gap as i32;
 
-                let tmax = [identity, ugap, lgap].iter().max().copied().unwrap();
+                let tmax = max(max(identity, ugap), lgap);
                 score_matrix[i][j] = tmax;
 
                 if tmax == identity {

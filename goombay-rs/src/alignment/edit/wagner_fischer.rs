@@ -1,6 +1,7 @@
 use crate::align::global_base::{GlobalAlgorithm, GlobalAlignmentModel, Metric};
 use crate::align::scoring::LevenshteinScoring;
 use crate::align::{AlignmentData, GlobalAlignmentMatrix, PointerValues, Scoring};
+use std::cmp::min;
 
 pub struct WagnerFischer<S: Scoring + Clone> {
     pub scores: S,
@@ -59,7 +60,7 @@ impl GlobalAlignmentMatrix<LevenshteinScoring> for WagnerFischer<LevenshteinScor
                 let ugap = score_matrix[i - 1][j] + self.scores.gap as i32;
                 let lgap = score_matrix[i][j - 1] + self.scores.gap as i32;
 
-                let tmax = [identity, ugap, lgap].iter().min().copied().unwrap();
+                let tmax = min(min(identity, ugap), lgap);
                 score_matrix[i][j] = tmax;
 
                 if tmax == identity {
