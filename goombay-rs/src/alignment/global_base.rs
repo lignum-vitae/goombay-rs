@@ -76,11 +76,11 @@ impl GlobalAlignmentModel {
                 let j = self.data.subject.len();
                 score_matrix[i][j]
             }
-            Metric::Distance => [self.data.query.len(), self.data.subject.len()]
-                .iter()
-                .max()
-                .copied()
-                .unwrap()
+            Metric::Distance => self
+                .data
+                .query
+                .len()
+                .max(self.data.subject.len())
                 .saturating_sub(self.distance() as usize) as i32,
             // converting self.distance to usize is fine because
             // Lowrance Wagner and Wagner Fischer only return
@@ -95,20 +95,12 @@ impl GlobalAlignmentModel {
         match self.metric {
             Metric::Similarity => {
                 if self.data.query.is_empty() || self.data.subject.is_empty() {
-                    let max_len = [self.data.query.len(), self.data.subject.len()]
-                        .iter()
-                        .max()
-                        .copied()
-                        .unwrap_or(0_usize);
+                    let max_len = self.data.query.len().max(self.data.subject.len());
                     return (max_len * self.mismatch) as i32;
                 }
                 let similarity = self.similarity();
-                let max_possible = [self.data.query.len(), self.data.subject.len()]
-                    .iter()
-                    .max()
-                    .copied()
-                    .unwrap()
-                    * self.identity;
+                let max_possible =
+                    self.data.query.len().max(self.data.subject.len()) * self.identity;
                 max_possible as i32 - similarity.abs()
             }
             Metric::Distance => {
@@ -124,16 +116,8 @@ impl GlobalAlignmentModel {
         match self.metric {
             Metric::Similarity => {
                 let raw_sim = (self.similarity()) as f64;
-                let max_length = [self.data.query.len(), self.data.subject.len()]
-                    .iter()
-                    .max()
-                    .copied()
-                    .unwrap();
-                let min_length = [self.data.query.len(), self.data.subject.len()]
-                    .iter()
-                    .min()
-                    .copied()
-                    .unwrap();
+                let max_length = self.data.query.len().max(self.data.subject.len());
+                let min_length = self.data.query.len().min(self.data.subject.len());
                 let max_possible = (max_length * self.identity) as f64;
                 let min_possible =
                     -((min_length * self.mismatch + (max_length - min_length) * self.gap) as f64);
@@ -152,11 +136,9 @@ impl GlobalAlignmentModel {
         match self.metric {
             Metric::Similarity => 1_f64 - self.normalized_similarity(),
             Metric::Distance => {
-                let max_poss_dist = [self.data.query.len(), self.data.subject.len()]
-                    .iter()
-                    .max()
-                    .copied()
-                    .unwrap();
+                // This distance metric is valid for Wagner-Fischer
+                // May need to update if other algorithms are added
+                let max_poss_dist = self.data.query.len().max(self.data.subject.len());
                 self.distance() as f64 / max_poss_dist as f64
             }
         }

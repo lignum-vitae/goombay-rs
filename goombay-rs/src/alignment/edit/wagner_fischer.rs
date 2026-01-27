@@ -59,16 +59,19 @@ impl GlobalAlignmentMatrix<LevenshteinScoring> for WagnerFischer<LevenshteinScor
                 let ugap = score_matrix[i - 1][j] + self.scores.gap as i32;
                 let lgap = score_matrix[i][j - 1] + self.scores.gap as i32;
 
-                let tmax = [identity, ugap, lgap].iter().min().copied().unwrap();
-                score_matrix[i][j] = tmax;
+                let tmin = match [identity, ugap, lgap].into_iter().min() {
+                    Some(val) => val,
+                    None => unreachable!(),
+                };
+                score_matrix[i][j] = tmin;
 
-                if tmax == identity {
+                if tmin == identity {
                     pointer_matrix[i][j] += PointerValues::Match as i32;
                 }
-                if tmax == ugap {
+                if tmin == ugap {
                     pointer_matrix[i][j] += PointerValues::Up as i32;
                 }
-                if tmax == lgap {
+                if tmin == lgap {
                     pointer_matrix[i][j] += PointerValues::Left as i32;
                 }
             }
