@@ -62,7 +62,10 @@ impl GlobalAlignmentMatrix<GeneralScoring> for NeedlemanWunsch<GeneralScoring> {
                 let ugap = score_matrix[i - 1][j] - self.scores.gap as i32;
                 let lgap = score_matrix[i][j - 1] - self.scores.gap as i32;
 
-                let tmax = [identity, ugap, lgap].iter().max().copied().unwrap();
+                let tmax = match [identity, ugap, lgap].into_iter().max() {
+                    Some(val) => val,
+                    None => unreachable!(),
+                };
                 score_matrix[i][j] = tmax;
 
                 if tmax == identity {
