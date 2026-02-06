@@ -41,7 +41,9 @@ impl GlobalAlignmentModel {
 
     fn select_aligner(&self) -> Box<dyn Iterator<Item = (String, String)> + '_> {
         match self.aligner {
-            GlobalAlgorithm::NeedlemanWunsch | GlobalAlgorithm::WagnerFischer | GlobalAlgorithm::Gotoh => {
+            GlobalAlgorithm::NeedlemanWunsch
+            | GlobalAlgorithm::WagnerFischer
+            | GlobalAlgorithm::Gotoh => {
                 let i = self.data.query.len();
                 let j = self.data.subject.len();
                 let global_aligner = GlobalAligner {
