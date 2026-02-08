@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 spindalis = "0.4.6"
+ndarray = "0.15"
