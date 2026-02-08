@@ -50,14 +50,16 @@ impl GlobalAlignmentMatrix<ExtendedGapScoring> for Gotoh<ExtendedGapScoring> {
         let p_ptr = &mut ptr_second[0];
         let q_ptr = &mut ptr_third[0];
 
-        // Initialize D matrix
         d[0][0] = 0;
         for i in 1..query_len {
             d[i][0] = -(self.scores.gap as i32 + (i as i32 * self.scores.extended_gap as i32));
+            d_ptr[i][0] = PointerValues::Up as i32;
         }
         for j in 1..subject_len {
             d[0][j] = -(self.scores.gap as i32 + (j as i32 * self.scores.extended_gap as i32));
+            d_ptr[0][j] = PointerValues::Left as i32;
         }
+
 
         // Initialize P matrix (gap extension in query)
         for i in 0..query_len {
@@ -67,14 +69,6 @@ impl GlobalAlignmentMatrix<ExtendedGapScoring> for Gotoh<ExtendedGapScoring> {
         // Initialize Q matrix (gap extension in subject)
         for j in 0..subject_len {
             q[0][j] = 0;
-        }
-
-        // Initialize pointer matrices
-        for i in 1..query_len {
-            d_ptr[i][0] = PointerValues::Up as i32;
-        }
-        for j in 1..subject_len {
-            d_ptr[0][j] = PointerValues::Left as i32;
         }
 
         // Fill the matrices
