@@ -60,7 +60,6 @@ impl GlobalAlignmentMatrix<ExtendedGapScoring> for Gotoh<ExtendedGapScoring> {
             d_ptr[0][j] = PointerValues::Left as i32;
         }
 
-
         // Initialize P matrix (gap extension in query)
         for i in 0..query_len {
             p[i][0] = 0;
