@@ -1,5 +1,5 @@
 use crate::align::{AlignmentData, PointerValues};
-use spindalis::utils::Arr2D;
+use jedvek::Matrix2D;
 
 #[derive(Clone)]
 pub enum LocalAlgorithm {
@@ -75,8 +75,8 @@ impl LocalAlignmentModel {
 pub struct LocalAligner<'a> {
     pub query_chars: &'a [char],
     pub subject_chars: &'a [char],
-    pub pointer_matrix: &'a Arr2D<i32>,
-    pub score_matrix: &'a Arr2D<i32>,
+    pub pointer_matrix: &'a Matrix2D<i32>,
+    pub score_matrix: &'a Matrix2D<i32>,
     pub stack: Vec<(Vec<char>, Vec<char>, usize, usize)>,
     pub all_alignments: bool,
 }
