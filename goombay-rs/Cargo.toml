@@ -4,4 +4,4 @@ version = "0.2.1"
 edition = "2024"
 
 [dependencies]
-spindalis = "0.4.6"
+jedvek = "0.1.0"
