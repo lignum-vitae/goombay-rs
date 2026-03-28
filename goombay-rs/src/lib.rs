@@ -17,4 +17,5 @@ pub mod align {
     pub use edit::needleman_wunsch::NeedlemanWunsch;
     pub use edit::smith_waterman::SmithWaterman;
     pub use edit::wagner_fischer::WagnerFischer;
+    pub use edit::waterman_smith_beyer::WatermanSmithBeyer;
 }
