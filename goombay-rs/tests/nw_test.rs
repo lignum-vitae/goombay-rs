@@ -1,6 +1,6 @@
 use goombay_rs::align::{GlobalAlignmentMatrix, NeedlemanWunsch};
 use goombay_rs::scoring::GeneralScoring;
-use spindalis::utils::Arr2D;
+use jedvek::Matrix2D;
 
 #[test]
 fn test_identical_sequences() {
@@ -158,7 +158,7 @@ fn test_scoring_parameters() {
     let subject = "AT";
     let nw_alignment_matrix = custom_nw.calculate_matrix(query, subject);
 
-    let expected_score: Arr2D<i32> = Arr2D::from(&[[0, -3, -6], [-3, 1, -2], [-6, -2, -1]]);
+    let expected_score: Matrix2D<i32> = Matrix2D::from(&[[0, -3, -6], [-3, 1, -2], [-6, -2, -1]]);
 
     let score_matrix = &nw_alignment_matrix.data.score_matrix();
     for r in 0..=query.len() {

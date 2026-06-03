@@ -1,6 +1,6 @@
 use goombay_rs::align::{GlobalAlignmentMatrix, WagnerFischer};
 use goombay_rs::scoring::LevenshteinScoring;
-use spindalis::utils::Arr2D;
+use jedvek::Matrix2D;
 
 #[test]
 fn test_identical_sequences() {
@@ -156,7 +156,7 @@ fn test_scoring_parameters() {
     let subject = "AT";
     let wf_alignment_matrix = custom_wf.calculate_matrix(query, subject);
 
-    let expected_score: Arr2D<i32> = Arr2D::from(&[[0, 3, 6], [3, 0, 3], [6, 3, 2]]);
+    let expected_score: Matrix2D<i32> = Matrix2D::from(&[[0, 3, 6], [3, 0, 3], [6, 3, 2]]);
 
     let score_matrix = &wf_alignment_matrix.data.score_matrix();
     for r in 0..=query.len() {
