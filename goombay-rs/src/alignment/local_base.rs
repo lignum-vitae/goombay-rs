@@ -46,8 +46,8 @@ impl LocalAlignmentModel {
                 let local_aligner = LocalAligner {
                     query_chars: &self.data.query,
                     subject_chars: &self.data.subject,
-                    pointer_matrix: self.data.pointer_matrix(),
-                    score_matrix: self.data.score_matrix(),
+                    pointer_matrix: self.data.single_pointer_matrix(),
+                    score_matrix: self.data.single_score_matrix(),
                     stack: self
                         .start_indices
                         .iter()

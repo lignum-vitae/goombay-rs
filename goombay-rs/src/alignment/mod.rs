@@ -16,6 +16,14 @@ pub enum PointerValues {
     Transpose = 8,
 }
 
+pub struct TracebackState {
+    pub query_seq: Vec<char>,
+    pub subject_seq: Vec<char>,
+    pub row: usize,
+    pub col: usize,
+    pub active_ptr_matrix: usize, // e.g. for Gotoh , 0 for D, 1 for P, 2 for Q
+}
+
 pub trait GlobalAlignmentMatrix<S: Scoring + Clone> {
     fn compute(query: &str, subject: &str) -> GlobalAlignmentModel;
     fn set_scores(scores: &S) -> Self;
@@ -60,8 +68,8 @@ impl AlignmentData {
         ];
         let pointer_matrix = vec![
             Matrix2D::full(0, query.len() + 1, subject.len() + 1),
-            Matrix2D::full(0, query.len() + 1, subject.len() + 1),
-            Matrix2D::full(0, query.len() + 1, subject.len() + 1),
+            Matrix2D::full(3, query.len() + 1, subject.len() + 1),
+            Matrix2D::full(4, query.len() + 1, subject.len() + 1),
         ];
         AlignmentData {
             query,
@@ -71,11 +79,11 @@ impl AlignmentData {
         }
     }
 
-    pub fn score_matrix(&self) -> &Matrix2D<i32> {
+    pub fn single_score_matrix(&self) -> &Matrix2D<i32> {
         &self.score_matrix[0]
     }
 
-    pub fn pointer_matrix(&self) -> &Matrix2D<i32> {
+    pub fn single_pointer_matrix(&self) -> &Matrix2D<i32> {
         &self.pointer_matrix[0]
     }
 }

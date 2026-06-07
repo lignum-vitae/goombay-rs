@@ -158,7 +158,7 @@ fn test_scoring_parameters() {
 
     let expected_score: Matrix2D<i32> = Matrix2D::from(&[[0, 3, 6], [3, 0, 3], [6, 3, 2]]);
 
-    let score_matrix = &wf_alignment_matrix.data.score_matrix();
+    let score_matrix = &wf_alignment_matrix.data.single_score_matrix();
     for r in 0..=query.len() {
         for c in 0..=subject.len() {
             assert_eq!(

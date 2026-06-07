@@ -54,20 +54,14 @@ impl GlobalAlignmentMatrix<ExtendedGapScoring> for Gotoh<ExtendedGapScoring> {
         for i in 1..query_len {
             d[i][0] = -(self.scores.gap as i32 + (i as i32 * self.scores.extended_gap as i32));
             d_ptr[i][0] = PointerValues::Up as i32;
+            p[i][0] = i32::MIN;
+            q[i][0] = i32::MIN;
         }
         for j in 1..subject_len {
             d[0][j] = -(self.scores.gap as i32 + (j as i32 * self.scores.extended_gap as i32));
             d_ptr[0][j] = PointerValues::Left as i32;
-        }
-
-        // Initialize P matrix (gap extension in query)
-        for i in 0..query_len {
-            p[i][0] = 0;
-        }
-
-        // Initialize Q matrix (gap extension in subject)
-        for j in 0..subject_len {
-            q[0][j] = 0;
+            p[0][j] = i32::MIN;
+            q[0][j] = i32::MIN;
         }
 
         // Fill the matrices
@@ -82,18 +76,11 @@ impl GlobalAlignmentMatrix<ExtendedGapScoring> for Gotoh<ExtendedGapScoring> {
 
                 // Calculate D matrix (match/mismatch)
                 let d_match = d[i - 1][j - 1] + substitution;
-                let d_from_p = p[i - 1][j - 1] + substitution;
-                let d_from_q = q[i - 1][j - 1] + substitution;
-                d[i][j] = [d_match, d_from_p, d_from_q]
-                    .iter()
-                    .max()
-                    .copied()
-                    .unwrap_or(i32::MIN);
 
                 // Calculate P matrix (gap extension in query)
-                let p_gap_open =
-                    d[i - 1][j] - (self.scores.gap as i32 + self.scores.extended_gap as i32);
-                let p_gap_extend = p[i - 1][j] - (self.scores.extended_gap as i32);
+                let p_gap_open = d[i - 1][j]
+                    .saturating_sub(self.scores.gap as i32 + self.scores.extended_gap as i32);
+                let p_gap_extend = p[i - 1][j].saturating_sub(self.scores.extended_gap as i32);
                 p[i][j] = [p_gap_open, p_gap_extend]
                     .iter()
                     .max()
@@ -101,10 +88,16 @@ impl GlobalAlignmentMatrix<ExtendedGapScoring> for Gotoh<ExtendedGapScoring> {
                     .unwrap_or(i32::MIN);
 
                 // Calculate Q matrix (gap extension in subject)
-                let q_gap_open =
-                    d[i][j - 1] - (self.scores.gap as i32 + self.scores.extended_gap as i32);
-                let q_gap_extend = q[i][j - 1] - (self.scores.extended_gap as i32);
+                let q_gap_open = d[i][j - 1]
+                    .saturating_sub(self.scores.gap as i32 + self.scores.extended_gap as i32);
+                let q_gap_extend = q[i][j - 1].saturating_sub(self.scores.extended_gap as i32);
                 q[i][j] = [q_gap_open, q_gap_extend]
+                    .iter()
+                    .max()
+                    .copied()
+                    .unwrap_or(i32::MIN);
+
+                d[i][j] = [d_match, p[i][j], q[i][j]]
                     .iter()
                     .max()
                     .copied()
@@ -128,20 +121,13 @@ impl GlobalAlignmentMatrix<ExtendedGapScoring> for Gotoh<ExtendedGapScoring> {
                     q_ptr[i][j - 1] = PointerValues::Left as i32;
                 }
 
-                // Set pointers for D matrix based on which matrix gave the maximum score
-                let max_score = [d[i][j], p[i][j], q[i][j]]
-                    .iter()
-                    .max()
-                    .copied()
-                    .unwrap_or(i32::MIN);
-
-                if max_score == d[i][j] {
+                if d[i][j] == d_match {
                     d_ptr[i][j] += PointerValues::Match as i32;
                 }
-                if max_score == p[i][j] {
+                if d[i][j] == p[i][j] {
                     d_ptr[i][j] += PointerValues::Up as i32;
                 }
-                if max_score == q[i][j] {
+                if d[i][j] == q[i][j] {
                     d_ptr[i][j] += PointerValues::Left as i32;
                 }
             }
