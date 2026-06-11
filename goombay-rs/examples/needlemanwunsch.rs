@@ -11,8 +11,8 @@ fn main() {
     let nw_default = NeedlemanWunsch::compute(query, subject);
     // Align the sequences based on the pointer matrix
     let aligned = nw_default.all_alignments(true).align();
-    println!("{}", nw_default.data.score_matrix());
-    println!("{}", nw_default.data.pointer_matrix());
+    println!("{}", nw_default.data.single_score_matrix());
+    println!("{}", nw_default.data.single_pointer_matrix());
     for (i, alignment) in aligned.iter().enumerate() {
         println!("{}.", i + 1);
         println!("{alignment}");
@@ -40,8 +40,8 @@ fn main() {
 
     // Align the sequences based on the pointer matrix
     let aligned = nw_custom.align(); // One alignment returned by default
-    println!("{}", nw_custom.data.score_matrix());
-    println!("{}", nw_custom.data.pointer_matrix());
+    println!("{}", nw_custom.data.single_score_matrix());
+    println!("{}", nw_custom.data.single_pointer_matrix());
     for (i, alignment) in aligned.iter().enumerate() {
         println!("{}.", i + 1);
         println!("{alignment}");

@@ -1,4 +1,4 @@
-use crate::align::{AlignmentData, PointerValues};
+use crate::align::{AlignmentData, PointerValues, TracebackState};
 use jedvek::Matrix2D;
 
 #[derive(Clone)]
@@ -6,6 +6,7 @@ pub enum GlobalAlgorithm {
     NeedlemanWunsch,
     WagnerFischer,
     WatermanSmithBeyer,
+    Gotoh,
 }
 
 // Handles matrices that store similarity score vs distance score
@@ -47,7 +48,7 @@ impl GlobalAlignmentModel {
                 let global_aligner = GlobalAligner {
                     query_chars: &self.data.query,
                     subject_chars: &self.data.subject,
-                    pointer_matrix: self.data.pointer_matrix(),
+                    pointer_matrix: self.data.single_pointer_matrix(),
                     stack: vec![(Vec::new(), Vec::new(), i, j)],
                     all_alignments: self.all_alignments,
                     match_val: PointerValues::Match as i32,
@@ -68,6 +69,28 @@ impl GlobalAlignmentModel {
                 };
                 Box::new(wsb_aligner)
             }
+            GlobalAlgorithm::Gotoh => {
+                let i = self.data.query.len();
+                let j = self.data.subject.len();
+                let gotoh_aligner = GotohAligner {
+                    query_chars: &self.data.query,
+                    subject_chars: &self.data.subject,
+                    pointer_matrix: &self.data.pointer_matrix,
+                    stack: vec![TracebackState {
+                        query_seq: Vec::new(),
+                        subject_seq: Vec::new(),
+                        row: i,
+                        col: j,
+                        active_ptr_matrix: 0,
+                    }],
+                    all_alignments: self.all_alignments,
+                    match_val: PointerValues::Match as i32,
+                    up_val: PointerValues::Up as i32,
+                    left_val: PointerValues::Left as i32,
+                };
+                // Turns struct into dynamically dispatched iterator
+                Box::new(gotoh_aligner)
+            }
         }
     }
 
@@ -83,7 +106,10 @@ impl GlobalAlignmentModel {
         }
         match self.metric {
             Metric::Similarity => {
-                let score_matrix = self.data.score_matrix();
+                if self.data.query.is_empty() && self.data.subject.is_empty() {
+                    return 1;
+                }
+                let score_matrix = self.data.single_score_matrix();
                 let i = self.data.query.len();
                 let j = self.data.subject.len();
                 score_matrix[i][j]
@@ -106,17 +132,19 @@ impl GlobalAlignmentModel {
         }
         match self.metric {
             Metric::Similarity => {
-                if self.data.query.is_empty() || self.data.subject.is_empty() {
-                    let max_len = self.data.query.len().max(self.data.subject.len());
-                    return (max_len * self.mismatch) as i32;
+                if self.data.query.is_empty() && self.data.subject.is_empty() {
+                    return 0;
                 }
                 let similarity = self.similarity();
                 let max_possible =
                     self.data.query.len().max(self.data.subject.len()) * self.identity;
-                max_possible as i32 - similarity.abs()
+                if similarity > 0 {
+                    return max_possible as i32 - similarity.abs();
+                }
+                similarity.abs()
             }
             Metric::Distance => {
-                let score_matrix = self.data.score_matrix();
+                let score_matrix = self.data.single_score_matrix();
                 let i = self.data.query.len();
                 let j = self.data.subject.len();
                 score_matrix[i][j]
@@ -127,6 +155,12 @@ impl GlobalAlignmentModel {
     pub fn normalized_similarity(&self) -> f64 {
         match self.metric {
             Metric::Similarity => {
+                if self.data.query.is_empty() && self.data.subject.is_empty() {
+                    return 1.0;
+                }
+                if self.data.query.is_empty() || self.data.subject.is_empty() {
+                    return 0.0;
+                }
                 let raw_sim = (self.similarity()) as f64;
                 let max_length = self.data.query.len().max(self.data.subject.len());
                 let min_length = self.data.query.len().min(self.data.subject.len());
@@ -230,6 +264,113 @@ impl<'a> Iterator for GlobalAligner<'a> {
                 let mut new_ss_align = ss_align.clone();
                 new_ss_align.push(self.subject_chars[j - 1]);
                 self.stack.push((new_qs_align, new_ss_align, i, j - 1));
+                if !self.all_alignments {
+                    continue;
+                }
+            }
+        }
+        None
+    }
+}
+
+pub struct GotohAligner<'a> {
+    pub query_chars: &'a [char],
+    pub subject_chars: &'a [char],
+    pub pointer_matrix: &'a Vec<Matrix2D<i32>>,
+    pub stack: Vec<TracebackState>,
+    pub all_alignments: bool,
+    pub match_val: i32,
+    pub up_val: i32,
+    pub left_val: i32,
+}
+
+impl<'a> Iterator for GotohAligner<'a> {
+    type Item = (String, String);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let identity = PointerValues::Match as i32; // 2
+        let up = PointerValues::Up as i32; // 3
+        let left = PointerValues::Left as i32; // 4
+
+        let identity_array = [
+            identity,
+            identity + up,
+            identity + left,
+            identity + up + left,
+        ];
+        let left_array = [left, left + identity, left + up, left + identity + up];
+        let up_array = [up, up + identity, up + left, up + identity + left];
+
+        let (d_ptr_idx, p_ptr_idx, q_ptr_idx) = (0, 1, 2);
+        while let Some(state) = self.stack.pop() {
+            let TracebackState {
+                query_seq: qs_align,
+                subject_seq: ss_align,
+                row: i,
+                col: j,
+                active_ptr_matrix: ptr_matrix_idx,
+            } = state;
+            let active_matrix = &self.pointer_matrix[ptr_matrix_idx];
+            if i == 0 && j == 0 {
+                let mut qs_align = qs_align;
+                let mut ss_align = ss_align;
+                qs_align.reverse();
+                ss_align.reverse();
+                let qs_aligned = qs_align.into_iter().collect::<String>();
+                let ss_aligned = ss_align.into_iter().collect::<String>();
+
+                if !self.all_alignments {
+                    self.stack.clear();
+                }
+                return Some((qs_aligned, ss_aligned));
+            }
+
+            if identity_array.contains(&active_matrix[i][j]) {
+                let mut new_qs_align = qs_align.clone();
+                new_qs_align.push(self.query_chars[i - 1]);
+                let mut new_ss_align = ss_align.clone();
+                new_ss_align.push(self.subject_chars[j - 1]);
+                self.stack.push(TracebackState {
+                    query_seq: new_qs_align,
+                    subject_seq: new_ss_align,
+                    row: i - 1,
+                    col: j - 1,
+                    active_ptr_matrix: d_ptr_idx,
+                });
+                if !self.all_alignments {
+                    continue;
+                }
+            }
+
+            if up_array.contains(&active_matrix[i][j]) {
+                let mut new_qs_align = qs_align.clone();
+                new_qs_align.push(self.query_chars[i - 1]);
+                let mut new_ss_align = ss_align.clone();
+                new_ss_align.push('-');
+                self.stack.push(TracebackState {
+                    query_seq: new_qs_align,
+                    subject_seq: new_ss_align,
+                    row: i - 1,
+                    col: j,
+                    active_ptr_matrix: p_ptr_idx,
+                });
+                if !self.all_alignments {
+                    continue;
+                }
+            }
+
+            if left_array.contains(&active_matrix[i][j]) {
+                let mut new_qs_align = qs_align.clone();
+                new_qs_align.push('-');
+                let mut new_ss_align = ss_align.clone();
+                new_ss_align.push(self.subject_chars[j - 1]);
+                self.stack.push(TracebackState {
+                    query_seq: new_qs_align,
+                    subject_seq: new_ss_align,
+                    row: i,
+                    col: j - 1,
+                    active_ptr_matrix: q_ptr_idx,
+                });
                 if !self.all_alignments {
                     continue;
                 }

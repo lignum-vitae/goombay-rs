@@ -11,8 +11,8 @@ fn main() {
     let wf_default = WagnerFischer::compute(query, subject);
     // Align the sequences based on the pointer matrix
     let aligned = wf_default.all_alignments(true).align();
-    println!("{}", wf_default.data.score_matrix());
-    println!("{}", wf_default.data.pointer_matrix());
+    println!("{}", wf_default.data.single_score_matrix());
+    println!("{}", wf_default.data.single_pointer_matrix());
     for (i, alignment) in aligned.iter().enumerate() {
         println!("{}.", i + 1);
         println!("{alignment}");
@@ -40,8 +40,8 @@ fn main() {
 
     // Align the sequences based on the pointer matrix
     let aligned = wf_custom.align(); // One alignment returned by default
-    println!("{}", wf_custom.data.score_matrix());
-    println!("{}", wf_custom.data.pointer_matrix());
+    println!("{}", wf_custom.data.single_score_matrix());
+    println!("{}", wf_custom.data.single_pointer_matrix());
     for (i, alignment) in aligned.iter().enumerate() {
         println!("{}.", i + 1);
         println!("{alignment}");
