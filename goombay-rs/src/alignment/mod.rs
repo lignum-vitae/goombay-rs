@@ -79,6 +79,23 @@ impl AlignmentData {
         }
     }
 
+    pub fn new_wsb(query: &str, subject: &str) -> AlignmentData {
+        let query: Vec<char> = query.to_uppercase().chars().collect();
+        let subject: Vec<char> = subject.to_uppercase().chars().collect();
+        let score_matrix = vec![Matrix2D::full(0, query.len() + 1, subject.len() + 1)];
+        let pointer_matrix = vec![
+            Matrix2D::full(0, query.len() + 1, subject.len() + 1),
+            Matrix2D::full(0, query.len() + 1, subject.len() + 1),
+            Matrix2D::full(0, query.len() + 1, subject.len() + 1),
+        ];
+        AlignmentData {
+            query,
+            subject,
+            score_matrix,
+            pointer_matrix,
+        }
+    }
+
     pub fn single_score_matrix(&self) -> &Matrix2D<i32> {
         &self.score_matrix[0]
     }
