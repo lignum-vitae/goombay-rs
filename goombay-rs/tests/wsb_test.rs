@@ -105,6 +105,26 @@ fn test_affine_gap_prefers_contiguous_gaps() {
 }
 
 #[test]
+fn test_all_alignments_1() {
+    let wsb = WatermanSmithBeyer::compute("ACCGT", "CT");
+    let all_aligned = wsb.all_alignments(true).align();
+
+    assert_eq!(all_aligned.len(), 2);
+    assert!(all_aligned.contains(&"ACCGT\n---CT".to_string()));
+    assert!(all_aligned.contains(&"ACCGT\nC---T".to_string()));
+}
+
+#[test]
+fn test_all_alignments_2() {
+    let wsb = WatermanSmithBeyer::compute("ATGTGTA", "ATA");
+    let all_aligned = wsb.all_alignments(true).align();
+
+    assert_eq!(all_aligned.len(), 2);
+    assert!(all_aligned.contains(&"ATGTGTA\nAT----A".to_string()));
+    assert!(all_aligned.contains(&"ATGTGTA\nA----TA".to_string()));
+}
+
+#[test]
 fn test_custom_scoring() {
     let scores = ExtendedGapScoring {
         identity: 1,
