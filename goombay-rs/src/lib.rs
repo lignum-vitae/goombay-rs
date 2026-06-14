@@ -20,3 +20,8 @@ pub mod align {
     pub use edit::wagner_fischer::WagnerFischer;
     pub use edit::waterman_smith_beyer::WatermanSmithBeyer;
 }
+
+pub mod aligners {
+    pub use crate::alignment::aligners::global;
+    pub use crate::alignment::aligners::local;
+}

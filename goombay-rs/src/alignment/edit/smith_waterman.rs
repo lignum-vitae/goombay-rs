@@ -1,4 +1,4 @@
-use crate::align::local_base::{LocalAlgorithm, LocalAlignmentModel, LocalMetric};
+use crate::align::local_alignment_model::{LocalAlgorithm, LocalAlignmentModel, LocalMetric};
 use crate::align::scoring::GeneralScoring;
 use crate::align::{AlignmentData, LocalAlignmentMatrix, PointerValues, Scoring};
 

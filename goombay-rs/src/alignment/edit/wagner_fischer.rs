@@ -1,4 +1,4 @@
-use crate::align::global_base::{GlobalAlgorithm, GlobalAlignmentModel, Metric};
+use crate::align::global_alignment_model::{GlobalAlgorithm, GlobalAlignmentModel, Metric};
 use crate::align::scoring::LevenshteinScoring;
 use crate::align::{AlignmentData, GlobalAlignmentMatrix, PointerValues, Scoring};
 

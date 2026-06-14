@@ -1,11 +1,12 @@
-use crate::align::global_base::GlobalAlignmentModel;
-use crate::align::local_base::LocalAlignmentModel;
+use crate::align::global_alignment_model::GlobalAlignmentModel;
+use crate::align::local_alignment_model::LocalAlignmentModel;
 use jedvek::Matrix2D;
 pub mod scoring;
 
+pub mod aligners;
 pub mod edit;
-pub mod global_base;
-pub mod local_base;
+pub mod global_alignment_model;
+pub mod local_alignment_model;
 
 pub use scoring::Scoring;
 
